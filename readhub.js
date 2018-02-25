@@ -10,7 +10,7 @@ var
   newsType = "news"
 
 const
-  version = 1.0,
+  version = 1.01,
   menuIndex = ["news", "technews", "blockchain"],
   listTemplate = [{
       type: "label",
