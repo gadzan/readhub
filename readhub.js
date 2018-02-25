@@ -278,4 +278,5 @@ function checkUpdate() {
   })
 }
 
+checkUpdate()
 renderMain()
