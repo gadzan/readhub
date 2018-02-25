@@ -1,5 +1,6 @@
 /***
 Github: https://github.com/gadzan/readhub
+Website: https://readhub.me
 Author: Gadzan
 Usage: ReadHub
 ***/
