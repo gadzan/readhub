@@ -1,5 +1,5 @@
 /***
-Github: 
+Github: https://github.com/gadzan/readhub
 Author: Gadzan
 Usage: ReadHub
 ***/
