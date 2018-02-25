@@ -265,7 +265,7 @@ function checkUpdate() {
           actions: [{
             title: "更新",
             handler: function() {
-              var url = "jsbox://install?url=https://raw.githubusercontent.com/gadzan/readhub/master/readhub.js&name=ReadHub&icon=icon_050.png";
+              var url = "jsbox://install?url=https://raw.githubusercontent.com/gadzan/readhub/master/readhub.js&name=ReadHub&icon=icon_045.png";
               $app.openURL(encodeURI(url));
               $app.close()
             }
