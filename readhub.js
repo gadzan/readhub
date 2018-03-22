@@ -10,7 +10,7 @@ var
   newsType = "news"
 
 const
-  version = 1.01,
+  version = 1.2,
   menuIndex = ["news", "technews", "blockchain"],
   listTemplate = [{
       type: "label",
@@ -135,14 +135,14 @@ const
       didReachBottom: function(sender) {
         sender.endFetchingMore()
         var cursor = new Date(newsRawData[newsRawData.length - 1].publishDate)
-        getData(newsType, cursor.getTime(), function(rawdata) {
+        getData(newsType, cursor.getTime(), 20, function(rawdata) {
           newsRawData = newsRawData.concat(rawdata)
           $("newsList").data = formateData(newsRawData)
         })
       },
       pulled: function(sender) {
         $("newsList").beginRefreshing()
-        getData(newsType, null, function(rawdata) {
+        getData(newsType, null, 20, function(rawdata) {
           newsRawData.splice(0, 20)
           newsRawData = rawdata.concat(newsRawData)
           $("newsList").data = formateData(newsRawData)
@@ -175,7 +175,7 @@ function timeAgo(time) {
 function menuChanged(index) {
   //newsRawData = []
   newsType = menuIndex[index]
-  getData(newsType, null, function(rawdata) {
+  getData(newsType, null, 20, function(rawdata) {
     newsRawData = rawdata
     $("newsList").data = formateData(newsRawData)
     $("newsList").scrollTo({
@@ -211,14 +211,17 @@ function formateData(rawdata) {
   return data
 }
 
-function getData(newsType, lastCursor, callback) {
+function getData(newsType, lastCursor, pageSize, callback) {
+
   if (!lastCursor) lastCursor = "";
   $ui.loading(true)
   $http.get({
-    url: `https://api.readhub.me/${newsType}?lastCursor=${lastCursor}&pageSize=20`,
+    url: `https://api.readhub.me/${newsType}?lastCursor=${lastCursor}&pageSize=${pageSize}`,
     handler: function(resp) {
       $ui.loading(false)
-      $("newsList").endRefreshing()
+      if (newsType != "topic") {
+        $("newsList").endRefreshing()
+      }
       var data = resp.data
       if (data) {
         typeof(callback) === "function" ? callback(data.data): false
@@ -229,27 +232,215 @@ function getData(newsType, lastCursor, callback) {
   })
 }
 
-function renderMain() {
-  $ui.render({
-    props: {
-      title: "ReadHub"
-    },
-    views: [{
-      type: "view",
-      props: {
-        id: ""
-      },
-      views: [nav, newsList],
-      layout: $layout.fill,
-      events: {
+function enterFromNoti() {
+  if (typeof($cache.get("notiEnter")) != "undefined") {
+    var notiEnter = $cache.get("notiEnter")
+    var timeBetw = new Date().getTime() - notiEnter.getTime()
+    if (timeBetw < 30000) {
+      $cache.remove("notiEnter")
+      return true
+    } else {
+      $cache.remove("notiEnter")
+    }
+  }
+  return false
+}
 
-      }
-    }]
-  })
-  getData(newsType, null, function(rawdata) {
-    newsRawData = rawdata
-    $("newsList").data = formateData(newsRawData)
-  })
+function renderMain() {
+  if ($app.env == $env.notification) {
+    newsType = "topic"
+    getData(newsType, null, 1, function(rawdata) {
+    $ui.render({
+      props: {
+        title: "ReadHub"
+      },
+      views: [{
+        type: "view",
+        props: {
+          id: ""
+        },
+        views: [{
+            type: "matrix",
+            props: {
+              columns: 4,
+              itemHeight: 30,
+              spacing: 5,
+              id: "tags",
+              template: {
+                props: {
+
+                },
+                views: [{
+                  type: "label",
+                  props: {
+                    id: "tile",
+                    bgcolor: $color("#474b51"),
+                    textColor: $color("#abb2bf"),
+                    font: $font(12),
+                    lines: 1,
+                    radius: 5,
+                    align: $align.center
+                  },
+                  layout: $layout.fill
+                }]
+              }
+            },
+            layout: function(make, view) {
+              make.top.inset(0)
+              make.left.right.inset(10)
+              make.height.equalTo(40*Math.ceil(rawdata[0].nelData.result.length/4))
+            }
+          },
+          {
+            type: "label",
+            props: {
+              text: "Loading...",
+              id: "newsNotiTitle",
+              font: $font("bold", 18),
+              lines: 2,
+              align: $align.left
+            },
+            layout: function(make, view) {
+              make.top.equalTo(view.prev.bottom).offset(0)
+              make.left.right.inset(15)
+              make.height.equalTo(50)
+            }
+          },
+          {
+            type: "label",
+            props: {
+              text: "Loading...",
+              id: "newsNotiSummary",
+              textColor: $color("#8A8A8A"),
+              font: $font(15),
+              lines: 14
+              //autoFontSize: true
+            },
+            layout: function(make, view) {
+              make.top.equalTo(view.prev.bottom).offset(0)
+              make.left.right.inset(15)
+            }
+          },
+          {
+            type: "matrix",
+            props: {
+              columns: 1,
+              itemHeight: 30,
+              spacing: 5,
+              id: "newsLinks",
+              template: {
+                props: {
+
+                },
+                views: [{
+                  type: "label",
+                  props: {
+                    id: "links",
+                    bgcolor: $color("#abb2bf"),
+                    textColor: $color("#474b51"),
+                    font: $font(12),
+                    lines: 1,
+                    radius: 5,
+                    align: $align.center
+                  },
+                  layout: $layout.fill
+                }]
+              }
+            },
+            layout: function(make, view) {
+              make.bottom.inset(25)
+              make.left.right.inset(10)
+              make.height.equalTo(70)
+            }
+          },
+          {
+            type: "label",
+            props: {
+              text: "Loading...",
+              id: "newsNotiTime",
+              textColor: $color("#8A8A8A"),
+              font: $font(15),
+              lines: 14
+              //autoFontSize: true
+            },
+            layout: function(make, view) {
+              make.bottom.inset(5)
+              make.left.right.inset(15)
+            }
+          }
+        ],
+        layout: $layout.fill
+      }]
+    })
+    
+      $("tags").data = rawdata[0].nelData.result.map(function(item) {
+        return {
+          tile: {
+            text: item.nerName.toString()
+          }
+        }
+      })
+      $("newsLinks").data = rawdata[0].newsArray.map(function(item) {
+        return {
+          links: {
+            text: item.title.toString()
+          }
+        }
+      })
+      $("newsNotiTitle").text = rawdata[0].title;
+      $("newsNotiSummary").text = rawdata[0].summary
+      $("newsNotiTime").text = timeAgo(getTimeStamp(rawdata[0].publishDate))
+      $cache.set("notiNews", rawdata[0].newsArray)
+    })
+  } else {
+
+    $ui.render({
+      props: {
+        title: "ReadHub"
+      },
+      views: [{
+        type: "view",
+        props: {
+          id: ""
+        },
+        views: [nav, newsList],
+        layout: $layout.fill,
+        events: {
+
+        }
+      }]
+    })
+
+    getData(newsType, null, 20, function(rawdata) {
+      newsRawData = rawdata
+      $("newsList").data = formateData(newsRawData)
+    })
+    if (enterFromNoti() == false) {
+      $cache.remove("notiNews")
+    }
+
+    if (typeof($cache.get("notiNews")) != "undefined") {
+      var notiNews = $cache.get("notiNews")
+      $cache.remove("notiNews")
+      var notiNewsTitle = notiNews.map(item => {
+        return item.title
+      })
+      $ui.menu({
+        items: notiNewsTitle,
+        handler: function(title, idx) {
+          $ui.push({
+            views: [{
+              type: "web",
+              props: {
+                url: notiNews[idx].mobileUrl.toString()
+              },
+              layout: $layout.fill
+            }]
+          })
+        }
+      })
+    }
+  }
 }
 
 function checkUpdate() {
@@ -280,3 +471,11 @@ function checkUpdate() {
 
 checkUpdate()
 renderMain()
+$app.listen({
+  exit: function() {
+    if ($app.env == $env.notification) {
+      var now = new Date()
+      $cache.set("notiEnter", now)
+    }
+  }
+})
